@@ -1,0 +1,13 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+dist
+build
+tests
+docs
+deploy
+example-bitcoin-data

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=78", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nodesentry"
+version = "0.1.0"
+description = "Local-first sovereignty auditor for Bitcoin Core nodes"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{name = "Wodress"}]
+dependencies = ["click>=8.1,<9"]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0.3,<10", "pytest-cov>=7,<8", "ruff>=0.11,<1", "pip-audit>=2.8,<3", "build>=1.2,<2"]
+
+[project.scripts]
+nodesentry = "nodesentry.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["nodesentry*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S"]
+ignore = ["S104", "S105"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S106"]

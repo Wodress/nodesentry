@@ -1,0 +1,26 @@
+[Unit]
+Description=NodeSentry Bitcoin Core sovereignty audit
+After=network-online.target bitcoind.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=nodesentry
+Group=bitcoin
+ExecStart=/opt/nodesentry/bin/nodesentry audit --data-dir /var/lib/bitcoind --cookie-file /var/lib/bitcoind/.cookie --format terminal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

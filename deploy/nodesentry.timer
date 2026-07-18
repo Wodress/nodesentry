@@ -1,0 +1,11 @@
+[Unit]
+Description=Run NodeSentry every fifteen minutes
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=15m
+Persistent=true
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target

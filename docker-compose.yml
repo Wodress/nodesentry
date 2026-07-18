@@ -1,0 +1,23 @@
+services:
+  nodesentry:
+    build: .
+    image: nodesentry:local
+    command:
+      - audit
+      - --rpc-url
+      - ${BITCOIN_RPC_URL:-http://127.0.0.1:8332}
+      - --data-dir
+      - /bitcoin
+      - --cookie-file
+      - /bitcoin/.cookie
+    volumes:
+      - ${BITCOIN_DATA_DIR:-./example-bitcoin-data}:/bitcoin:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    network_mode: host
+    restart: "no"
