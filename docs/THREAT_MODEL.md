@@ -14,4 +14,9 @@ NodeSentry does not hold keys, sign transactions, alter `bitcoin.conf`, open por
 
 ## Controls
 
-Read-only RPC calls, credential redaction, local execution, no telemetry, bounded HTTP responses, deterministic checks, explicit `UNKNOWN`, restrictive container capabilities, and stable finding IDs.
+Client-side allowlisted observational RPC calls, credential redaction, redirect rejection,
+strict RPC URL parsing, local execution, no telemetry, bounded HTTP responses, deterministic
+checks, explicit `UNKNOWN`, restrictive container capabilities, and stable finding IDs.
+
+The Bitcoin Core cookie is not a read-only credential. Server-side least privilege requires
+a dedicated `rpcauth` user constrained with `rpcwhitelistdefault=1` and `rpcwhitelist`.

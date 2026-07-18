@@ -62,10 +62,10 @@ def summarize(findings: list[Finding]) -> Report:
     )
     if critical_fail or any(item.status is Status.FAIL for item in active):
         status = Status.FAIL
-    elif any(item.status is Status.WARN for item in active):
-        status = Status.WARN
     elif any(item.status is Status.UNKNOWN for item in active):
         status = Status.UNKNOWN
+    elif any(item.status is Status.WARN for item in active):
+        status = Status.WARN
     else:
         status = Status.PASS
     return Report(status, score, tuple(findings))

@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 User=nodesentry
-Group=bitcoin
-ExecStart=/opt/nodesentry/bin/nodesentry audit --data-dir /var/lib/bitcoind --cookie-file /var/lib/bitcoind/.cookie --format terminal
+Group=nodesentry
+ExecStart=/opt/nodesentry/bin/nodesentry audit --data-dir /var/lib/nodesentry/disk-probe --cookie-file /run/nodesentry/bitcoin-rpc-cookie --format terminal
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -20,6 +20,8 @@ RestrictNamespaces=true
 LockPersonality=true
 MemoryDenyWriteExecute=true
 CapabilityBoundingSet=
+ReadOnlyPaths=/run/nodesentry/bitcoin-rpc-cookie /var/lib/nodesentry/disk-probe
+InaccessiblePaths=-/var/lib/bitcoind/wallets -/var/lib/bitcoind/debug.log
 SystemCallArchitectures=native
 
 [Install]

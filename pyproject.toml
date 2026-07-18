@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nodesentry"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-first sovereignty auditor for Bitcoin Core nodes"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ include = ["nodesentry*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers"
+addopts = "--strict-markers --cov-fail-under=90"
 
 [tool.ruff]
 target-version = "py311"

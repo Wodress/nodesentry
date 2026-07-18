@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 class RPCError(RuntimeError):
     pass
+
+
+class _RejectRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+urlopen = build_opener(_RejectRedirects()).open
 
 
 class BitcoinRPC:
@@ -22,6 +31,14 @@ class BitcoinRPC:
             "uptime",
         }
     )
+    EXPECTED_RESULT_TYPES = {
+        "getblockchaininfo": dict,
+        "getnetworkinfo": dict,
+        "getpeerinfo": list,
+        "getmempoolinfo": dict,
+        "getnettotals": dict,
+        "uptime": int,
+    }
 
     def __init__(
         self,
@@ -33,7 +50,18 @@ class BitcoinRPC:
         timeout: float = 5.0,
     ):
         parsed = urlsplit(url)
-        loopback = parsed.hostname in {"127.0.0.1", "::1", "localhost"}
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise RPCError("RPC URL has an invalid port") from exc
+        if not parsed.hostname or port is None:
+            raise RPCError("RPC URL must include a host and explicit port")
+        try:
+            address = ipaddress.ip_address(parsed.hostname)
+        except ValueError:
+            loopback = parsed.hostname == "localhost"
+        else:
+            loopback = address.is_loopback and not getattr(address, "ipv4_mapped", None)
         if parsed.scheme not in {"http", "https"} or (parsed.scheme == "http" and not loopback):
             raise RPCError("Plaintext RPC is restricted to loopback; use HTTPS for remote nodes")
         if parsed.username or parsed.password or parsed.fragment:
@@ -74,6 +102,13 @@ class BitcoinRPC:
                 payload = json.loads(response.read(2_000_000))
         except Exception as exc:
             raise RPCError(f"RPC request failed: {type(exc).__name__}") from exc
+        if not isinstance(payload, dict) or payload.get("id") != "nodesentry":
+            raise RPCError("Bitcoin Core returned a malformed RPC response")
         if payload.get("error"):
             raise RPCError("Bitcoin Core returned an RPC error")
-        return payload.get("result")
+        if "result" not in payload:
+            raise RPCError("Bitcoin Core returned a malformed RPC response without a result")
+        result = payload["result"]
+        if not isinstance(result, self.EXPECTED_RESULT_TYPES[method]):
+            raise RPCError("Bitcoin Core returned a malformed RPC result")
+        return result

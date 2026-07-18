@@ -29,23 +29,30 @@ def network_group(addr: str, network: str) -> str:
 
 def check_peers(peers: list[dict]) -> list[Finding]:
     total = len(peers)
-    count_status = Status.PASS if total >= 8 else Status.WARN
     outbound = [peer for peer in peers if not peer.get("inbound", False)]
+    count_status = Status.PASS if len(outbound) >= 8 else Status.WARN
+    malformed = any(not peer.get("addr") or not peer.get("network") for peer in outbound)
     groups = Counter(
         network_group(str(peer.get("addr", "")), str(peer.get("network", "unknown")))
         for peer in outbound
     )
     dominant = max(groups.values(), default=0)
     ratio = dominant / len(outbound) if outbound else 1.0
-    diversity_status = Status.WARN if len(outbound) < 4 or ratio > 0.5 else Status.PASS
+    diversity_status = (
+        Status.UNKNOWN
+        if malformed
+        else Status.WARN
+        if len(outbound) < 4 or ratio > 0.5
+        else Status.PASS
+    )
     return [
         Finding(
             "PEER-001",
-            "Peer count",
+            "Outbound peer count",
             count_status,
             Severity.MEDIUM,
-            f"Connected peers: {total}.",
-            "Maintain at least eight healthy peers.",
+            f"Outbound peers: {len(outbound)}; inbound peers: {total - len(outbound)}.",
+            "Maintain at least eight independently selected outbound peers.",
         ),
         Finding(
             "PEER-002",

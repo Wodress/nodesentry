@@ -13,7 +13,8 @@ def test_public_rpc_allow_rule_fails(tmp_path: Path):
     conf.write_text("server=1\nrpcbind=0.0.0.0\nrpcallowip=0.0.0.0/0\n")
     result = by_id(audit_config(conf))
     assert result["RPC-001"].status is Status.FAIL
-    assert "0.0.0.0/0" in result["RPC-001"].evidence
+    assert "0.0.0.0/0" not in result["RPC-001"].evidence
+    assert "redacted" in result["RPC-001"].evidence
 
 
 def test_loopback_rpc_configuration_passes(tmp_path: Path):

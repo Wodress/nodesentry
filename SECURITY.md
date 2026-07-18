@@ -13,10 +13,15 @@ hostnames in a public issue.
 
 ## Operator rules
 
-- Prefer Bitcoin Core cookie authentication on the same host.
+- Prefer a dedicated `rpcauth` identity constrained by `rpcwhitelistdefault=1` and an
+  explicit `rpcwhitelist` containing only NodeSentry's observational methods.
+- Bitcoin Core cookie authentication normally carries broad RPC authority. NodeSentry's
+  internal method allowlist constrains honest execution but cannot make a stolen cookie
+  read-only. Restrict cookie file access accordingly.
 - Keep RPC on loopback. For remote administration, terminate an authenticated SSH tunnel
   on loopback or use correctly validated HTTPS.
-- Mount Bitcoin data read-only when using the container.
+- Mount only a dedicated credential file and a separate disk-probe path. Do not expose the
+  full Bitcoin data directory, wallets, or logs to the container.
 - Treat JSON reports as potentially sensitive operational evidence even though exact peer
   addresses and credentials are not rendered.
 - NodeSentry does not make an exposed RPC endpoint safe; it only reports evidence.

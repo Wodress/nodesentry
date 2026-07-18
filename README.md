@@ -37,7 +37,9 @@ uv pip install -e . --python .venv/bin/python
 .venv/bin/nodesentry config audit ~/.bitcoin/bitcoin.conf
 ```
 
-Remote plaintext RPC is rejected. Use loopback, an SSH tunnel terminating on loopback, or HTTPS. Passwords may be supplied through `NODESENTRY_RPC_PASSWORD`, but cookie authentication is preferred.
+Remote plaintext RPC is rejected. Use loopback, an SSH tunnel terminating on loopback, or HTTPS. Passwords may be supplied through `NODESENTRY_RPC_PASSWORD`; there is deliberately no password-valued CLI option because process arguments leak.
+
+For the strongest boundary, create a dedicated `rpcauth` user and constrain it in Bitcoin Core with `rpcwhitelistdefault=1` and `rpcwhitelist=<user>:getblockchaininfo,getpeerinfo`. NodeSentry's method allowlist is defense in depth, not server-side authorization. Bitcoin Core's local cookie is convenient but normally grants broad RPC authority to any process that can read it.
 
 ## Example without a running node
 
@@ -46,10 +48,10 @@ NODE SOVEREIGNTY: 0/100  UNKNOWN
 
 ????  CHAIN-000  Bitcoin Core chain evidence
       RPC credentials missing
-      → Start Bitcoin Core and provide read-only RPC credentials.
+      → Start Bitcoin Core and provide restricted RPC credentials.
 ????  PEER-000   Bitcoin Core peer evidence
       RPC credentials missing
-      → Start Bitcoin Core and provide read-only RPC credentials.
+      → Start Bitcoin Core and provide restricted RPC credentials.
 ```
 
 `UNKNOWN` is not painted green. Absence of evidence is not evidence of sovereignty.
@@ -61,9 +63,9 @@ NODE SOVEREIGNTY: 0/100  UNKNOWN
 | `CHAIN-001` | Median chain-tip age |
 | `CHAIN-002` | Initial block download status |
 | `CHAIN-003` | Header gap and verification progress |
-| `PEER-001` | Connected peer count |
+| `PEER-001` | Independently selected outbound peer count |
 | `PEER-002` | Outbound local network-group concentration |
-| `RPC-001` | Wildcard `rpcbind` / `rpcallowip` exposure |
+| `RPC-001` | Public, LAN, unknown, or loopback RPC scope |
 | `CONF-001` | `bitcoin.conf` file permissions |
 | `CONF-002` | Plaintext `rpcpassword` directive |
 | `DISK-001` | Free-space safety floor |
@@ -78,7 +80,8 @@ Peer reports redact exact addresses. MVP uses local IPv4 `/16`, IPv6 prefix, Tor
 
 ## Security model
 
-- allowlisted read-only RPC methods only
+- client-side allowlist of observational RPC methods
+- dedicated `rpcauth` + `rpcwhitelist` recommended for server-side authorization
 - no wallet methods, keys, seeds, signing, or transactions
 - no automatic configuration changes
 - no telemetry or external HTTP calls
@@ -92,11 +95,11 @@ See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`docs/DEFINITION_OF_DONE
 
 ```bash
 cp .env.example .env
-# Set BITCOIN_DATA_DIR to a host path containing .cookie and optionally bitcoin.conf
+# Set BITCOIN_CREDENTIAL_FILE to a dedicated credential file; avoid mounting wallets/logs
 docker compose run --rm nodesentry
 ```
 
-The container is read-only, drops every Linux capability, enables `no-new-privileges`, mounts Bitcoin data read-only, and uses host networking so loopback RPC remains loopback. On macOS Docker Desktop, host networking must be enabled; otherwise use HTTPS or an explicit loopback tunnel. NodeSentry rejects plaintext remote RPC by design.
+The container is read-only, drops every Linux capability, enables `no-new-privileges`, and mounts only an explicit credential file plus a separate disk-probe path. It uses host networking so loopback RPC remains loopback. On macOS Docker Desktop, host networking must be enabled; otherwise use HTTPS or an explicit loopback tunnel. NodeSentry rejects plaintext remote RPC by design.
 
 ## Development
 
@@ -122,14 +125,15 @@ not only mocked RPC responses. After mining 101 blocks, Bitcoin Core reported
 - `DISK-001`: pass
 
 The resulting overall status was `warn` with exit code `1`, as designed. A closed-port
-test separately returns `unknown` with exit code `2`; missing evidence is never green.
+test separately returns `unknown` with exit code `2`; required missing evidence takes
+precedence over warnings and is never painted green.
 
 ## Honest limitations
 
 - Live smoke coverage currently uses isolated regtest; mainnet topology and long-running degradation still require operator validation.
 - Peer concentration is a heuristic, not proof of an eclipse attack.
 - Disk MVP checks a safety floor, not historical growth runway.
-- Includes and network-specific sections in `bitcoin.conf` are not yet resolved into Bitcoin Core's full effective configuration.
+- Includes and network-specific sections are detected but not resolved; affected static checks return `UNKNOWN`, never `PASS`.
 - Backup recovery drills, Prometheus, alerts, ASN enrichment and signed reports are roadmap items.
 
 ## License

@@ -34,7 +34,6 @@ def cli() -> None:
 @click.option("--rpc-url", default="http://127.0.0.1:8332", show_default=True)
 @click.option("--cookie-file", type=click.Path(path_type=Path), envvar="NODESENTRY_COOKIE_FILE")
 @click.option("--rpc-user", envvar="NODESENTRY_RPC_USER")
-@click.option("--rpc-password", envvar="NODESENTRY_RPC_PASSWORD", hidden=True)
 @click.option("--bitcoin-conf", type=click.Path(path_type=Path))
 @click.option("--data-dir", type=click.Path(path_type=Path), default=Path("~/.bitcoin"))
 @click.option(
@@ -44,7 +43,6 @@ def audit(
     rpc_url: str,
     cookie_file: Path | None,
     rpc_user: str | None,
-    rpc_password: str | None,
     bitcoin_conf: Path | None,
     data_dir: Path,
     output_format: str,
@@ -60,12 +58,10 @@ def audit(
             rpc_url,
             cookie_file=cookie_file,
             username=rpc_user,
-            password=rpc_password or os.getenv("NODESENTRY_RPC_PASSWORD"),
+            password=os.getenv("NODESENTRY_RPC_PASSWORD"),
         )
-        findings.extend(check_chain(rpc.call("getblockchaininfo")))
-        findings.extend(check_peers(rpc.call("getpeerinfo")))
     except RPCError as exc:
-        evidence = str(exc)
+        rpc = None
         for check_id, title in (
             ("CHAIN-000", "Bitcoin Core chain evidence"),
             ("PEER-000", "Bitcoin Core peer evidence"),
@@ -76,8 +72,35 @@ def audit(
                     title,
                     Status.UNKNOWN,
                     Severity.HIGH,
-                    evidence,
-                    "Start Bitcoin Core and provide read-only RPC credentials.",
+                    str(exc),
+                    "Provide a valid RPC endpoint and restricted credentials.",
+                )
+            )
+    if rpc is not None:
+        try:
+            findings.extend(check_chain(rpc.call("getblockchaininfo")))
+        except RPCError as exc:
+            findings.append(
+                Finding(
+                    "CHAIN-000",
+                    "Bitcoin Core chain evidence",
+                    Status.UNKNOWN,
+                    Severity.HIGH,
+                    str(exc),
+                    "Start Bitcoin Core and provide restricted RPC credentials.",
+                )
+            )
+        try:
+            findings.extend(check_peers(rpc.call("getpeerinfo")))
+        except RPCError as exc:
+            findings.append(
+                Finding(
+                    "PEER-000",
+                    "Bitcoin Core peer evidence",
+                    Status.UNKNOWN,
+                    Severity.HIGH,
+                    str(exc),
+                    "Start Bitcoin Core and provide restricted RPC credentials.",
                 )
             )
     if bitcoin_conf:

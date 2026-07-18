@@ -7,11 +7,12 @@ services:
       - --rpc-url
       - ${BITCOIN_RPC_URL:-http://127.0.0.1:8332}
       - --data-dir
-      - /bitcoin
+      - /disk-probe
       - --cookie-file
-      - /bitcoin/.cookie
+      - /run/secrets/bitcoin-rpc-cookie
     volumes:
-      - ${BITCOIN_DATA_DIR:-./example-bitcoin-data}:/bitcoin:ro
+      - ${BITCOIN_CREDENTIAL_FILE:?set BITCOIN_CREDENTIAL_FILE}:/run/secrets/bitcoin-rpc-cookie:ro
+      - ${BITCOIN_DISK_PROBE_PATH:?set BITCOIN_DISK_PROBE_PATH}:/disk-probe:ro
     read_only: true
     tmpfs:
       - /tmp:size=16m,noexec,nosuid,nodev
