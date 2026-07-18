@@ -12,4 +12,4 @@
 - [x] Tests, coverage, Ruff, package build and dependency audit pass.
 - [x] Docker and systemd examples use least privilege.
 - [x] README documents security model, limitations and real smoke evidence.
-- [ ] Git repository has a clean working tree and public GitHub remote.
+- [x] Git repository has a clean working tree and public GitHub remote.
